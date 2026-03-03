@@ -161,10 +161,12 @@ class AlgorithmVisualizerScreen(Screen):
         self.speed_multiplier = min(20.0, self.speed_multiplier + 0.5)
         self._update_timer_speed()
         self._update_info_label()
+        self.app.clear_notifications()
         self.notify(f"Speed: {self.speed_multiplier:.1f}x", timeout=1)
 
     def action_speed_down(self) -> None:
         self.speed_multiplier = max(0.5, self.speed_multiplier - 0.5)
         self._update_timer_speed()
         self._update_info_label()
+        self.app.clear_notifications()
         self.notify(f"Speed: {self.speed_multiplier:.1f}x", timeout=1)

@@ -62,11 +62,44 @@ class AlgoVisualizerApp(App):
         layout: horizontal;
     }
 
+    .grid-container {
+        layout: grid;
+        grid-size: 2 2;
+        grid-columns: 1fr 1fr;
+        grid-rows: 1fr 1fr;
+        height: 1fr;
+    }
+    
+    .grid-panel {
+        layout: vertical;
+        border: solid #cba6f7;
+        margin: 1 1;
+        content-align: center middle;
+        height: 100%;
+        width: 100%;
+    }
+    
+    .grid-label {
+        dock: top;
+        content-align: center middle;
+        text-style: bold;
+        color: #a6e3a1;
+        background: #181825;
+        width: 100%;
+        height: 1;
+    }
+
     ArrayVisualizer {
         width: 3fr;
         height: 1fr;
-        margin: 1 2;
+        margin: 0 1;
         content-align: center middle;
+    }
+    
+    .grid-panel ArrayVisualizer {
+        width: 1fr;
+        height: 1fr;
+        margin: 0 1;
     }
     
     .stats-panel {

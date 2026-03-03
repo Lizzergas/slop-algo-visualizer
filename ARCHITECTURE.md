@@ -30,16 +30,18 @@ src/
 ## 3. Core Components
 
 ### `state.py`
-Defines `AlgorithmState`, a dataclass holding the current `array`, lists of indices currently being `comparing` or `swapping`, and elements that have been finalized as `sorted_indices`.
+Defines `AlgorithmState`, a dataclass holding the current `array`, lists of indices currently being `comparing` or `swapping`, and elements that have been finalized as `sorted_indices`. It also maintains an `operations` integer for real-time tracking of array comparisons and swaps.
 
 ### `algorithms/base.py - SortAlgorithm`
 The ABC defining the contract for every algorithm.
 - `name` property.
 - `description` property (used in the UI info panel).
+- `time_complexity` property (returns best/avg/worst case string).
+- `space_complexity` property (returns space complexity string).
 - `sort(self, array: List[int]) -> Iterator[AlgorithmState]` method.
 
 ### `ui/visualizer.py`
-Requests an algorithm iterator, sets up a Textual Timer, and pulls the `next(iterator)` at a high frame rate, passing the resulting `AlgorithmState` down to the `ArrayVisualizer` reactive properties.
+Requests an algorithm iterator, sets up a Textual Timer, and pulls the `next(iterator)` at a high frame rate, passing the resulting `AlgorithmState` down to the `ArrayVisualizer` and `StatsPanel` reactive properties.
 
 ---
 
@@ -49,10 +51,11 @@ Requests an algorithm iterator, sets up a Textual Timer, and pulls the `next(ite
 1. Create a new file in `src/algorithms/` (e.g., `src/algorithms/heap_sort.py`).
 2. Import `SortAlgorithm` and `AlgorithmState`.
 3. Create a class extending `SortAlgorithm`.
-4. Implement the `sort` method as a generator using `yield`:
+4. Provide standard properties (`name`, `description`, `time_complexity`, `space_complexity`).
+5. Implement the `sort` method as a generator using `yield` and tracking `operations`:
     ```python
     from typing import Iterator, List
-    from src.types import AlgorithmState
+    from src.state import AlgorithmState
     from src.algorithms.base import SortAlgorithm
 
     class HeapSort(SortAlgorithm):
@@ -61,6 +64,12 @@ Requests an algorithm iterator, sets up a Textual Timer, and pulls the `next(ite
         
         @property
         def description(self) -> str: return "Description here..."
+        
+        @property
+        def time_complexity(self) -> str: return "Best/Avg/Worst: O(n log n)"
+        
+        @property
+        def space_complexity(self) -> str: return "O(1)"
 
         def sort(self, array: List[int]) -> Iterator[AlgorithmState]:
             arr = array.copy()

@@ -29,6 +29,11 @@ class MenuScreen(Screen):
         
         yield Label("Select Dataset:", classes="menu-title")
         dataset_items = [ListItem(Label(ds), id=f"ds_{i}") for i, ds in enumerate(DATASETS.keys())]
+        
+        # Add the 'Run All Datasets' option
+        run_all_idx = len(DATASETS)
+        dataset_items.append(ListItem(Label("Run All Datasets"), id=f"ds_{run_all_idx}"))
+        
         self.dataset_list = ListView(*dataset_items, id="dataset_list")
         yield self.dataset_list
         
@@ -75,7 +80,12 @@ class MenuScreen(Screen):
         
         if algo_idx is not None and ds_idx is not None:
             algo_name = AlgorithmFactory.get_available_algorithms()[algo_idx]
-            ds_name = list(DATASETS.keys())[ds_idx]
             
-            screen = AlgorithmVisualizerScreen(algo_name=algo_name, ds_name=ds_name)
+            if ds_idx == len(DATASETS):
+                from src.ui.all_datasets_visualizer import AllDatasetsVisualizerScreen
+                screen = AllDatasetsVisualizerScreen(algo_name=algo_name)
+            else:
+                ds_name = list(DATASETS.keys())[ds_idx]
+                screen = AlgorithmVisualizerScreen(algo_name=algo_name, ds_name=ds_name)
+                
             self.app.push_screen(screen)
