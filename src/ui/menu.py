@@ -52,7 +52,10 @@ class MenuScreen(Screen):
             self.dataset_list.action_cursor_up()
             
     def action_escape_focus(self) -> None:
-        self.app.set_focus(None)
+        self.algo_list.focus()
+
+    def action_quit(self) -> None:
+        self.app.exit()
             
     from textual import on
 

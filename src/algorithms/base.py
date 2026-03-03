@@ -17,6 +17,18 @@ class SortAlgorithm(ABC):
         """Short description of the algorithm and its best/worst case."""
         pass
 
+    @property
+    @abstractmethod
+    def time_complexity(self) -> str:
+        """String representation of the best, average, and worst time complexities."""
+        pass
+
+    @property
+    @abstractmethod
+    def space_complexity(self) -> str:
+        """String representation of the space complexity."""
+        pass
+
     @abstractmethod
     def sort(self, array: List[int]) -> Iterator[AlgorithmState]:
         """

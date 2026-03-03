@@ -8,6 +8,8 @@ class AlgorithmState:
     comparing: Optional[List[int]] = None
     swapping: Optional[List[int]] = None
     sorted_indices: Optional[List[int]] = None
+    operations: int = 0
+    time_elapsed: float = 0.0
 
     def __post_init__(self):
         if self.comparing is None:

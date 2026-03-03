@@ -14,12 +14,21 @@ class MergeSort(SortAlgorithm):
             "Best/Worst/Avg: O(n log n). Consistent performance regardless of initial order."
         )
 
+    @property
+    def time_complexity(self) -> str:
+        return "Best: O(n log n) | Avg: O(n log n) | Worst: O(n log n)"
+
+    @property
+    def space_complexity(self) -> str:
+        return "O(n)"
+
     def sort(self, array: List[int]) -> Iterator[AlgorithmState]:
+        self.ops = 0
         arr = array.copy()
-        yield AlgorithmState(arr.copy())
+        yield AlgorithmState(arr.copy(), operations=self.ops)
         
         yield from self._merge_sort(arr, 0, len(arr) - 1)
-        yield AlgorithmState(arr.copy(), sorted_indices=list(range(len(arr))))
+        yield AlgorithmState(arr.copy(), sorted_indices=list(range(len(arr))), operations=self.ops)
 
     def _merge_sort(self, arr: List[int], left: int, right: int) -> Iterator[AlgorithmState]:
         if left < right:
@@ -38,24 +47,28 @@ class MergeSort(SortAlgorithm):
         k = left
         
         while i < len(L) and j < len(R):
-            yield AlgorithmState(arr.copy(), comparing=[left+i, mid+1+j])
+            self.ops += 1 # Comparison
+            yield AlgorithmState(arr.copy(), comparing=[left+i, mid+1+j], operations=self.ops)
             if L[i] <= R[j]:
                 arr[k] = L[i]
                 i += 1
             else:
                 arr[k] = R[j]
                 j += 1
-            yield AlgorithmState(arr.copy(), swapping=[k])
+            self.ops += 1 # Write (act as swap for operations)
+            yield AlgorithmState(arr.copy(), swapping=[k], operations=self.ops)
             k += 1
             
         while i < len(L):
             arr[k] = L[i]
-            yield AlgorithmState(arr.copy(), swapping=[k])
+            self.ops += 1 # Write
+            yield AlgorithmState(arr.copy(), swapping=[k], operations=self.ops)
             i += 1
             k += 1
             
         while j < len(R):
             arr[k] = R[j]
-            yield AlgorithmState(arr.copy(), swapping=[k])
+            self.ops += 1 # Write
+            yield AlgorithmState(arr.copy(), swapping=[k], operations=self.ops)
             j += 1
             k += 1

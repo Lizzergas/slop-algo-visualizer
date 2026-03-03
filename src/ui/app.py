@@ -57,10 +57,45 @@ class AlgoVisualizerApp(App):
         color: #cdd6f4;
     }
     
+    .visualizer-container {
+        height: 1fr;
+        layout: horizontal;
+    }
+
     ArrayVisualizer {
+        width: 3fr;
         height: 1fr;
         margin: 1 2;
         content-align: center middle;
+    }
+    
+    .stats-panel {
+        width: 1fr;
+        height: 1fr;
+        margin: 1 2 1 0;
+        border: solid #cba6f7;
+        padding: 1 2;
+        background: #181825;
+    }
+    
+    .stats-title {
+        text-style: bold;
+        color: #a6e3a1;
+        text-align: center;
+        margin-bottom: 1;
+    }
+
+    .stats-item {
+        margin-bottom: 1;
+    }
+    
+    .stats-label {
+        color: #89b4fa;
+        text-style: bold;
+    }
+    
+    .stats-value {
+        color: #f38ba8;
     }
     """
     

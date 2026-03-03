@@ -14,21 +14,32 @@ class SelectionSort(SortAlgorithm):
             "Best/Worst/Avg: O(n^2) since it always scans the remaining elements."
         )
 
+    @property
+    def time_complexity(self) -> str:
+        return "Best: O(n²) | Avg: O(n²) | Worst: O(n²)"
+
+    @property
+    def space_complexity(self) -> str:
+        return "O(1)"
+
     def sort(self, array: List[int]) -> Iterator[AlgorithmState]:
         arr = array.copy()
         n = len(arr)
-        yield AlgorithmState(arr.copy())
+        ops = 0
+        yield AlgorithmState(arr.copy(), operations=ops)
         
         for i in range(n):
             min_idx = i
             for j in range(i + 1, n):
-                yield AlgorithmState(arr.copy(), comparing=[min_idx, j], sorted_indices=list(range(i)))
+                ops += 1 # compare
+                yield AlgorithmState(arr.copy(), comparing=[min_idx, j], sorted_indices=list(range(i)), operations=ops)
                 if arr[j] < arr[min_idx]:
                     min_idx = j
             
             if min_idx != i:
-                yield AlgorithmState(arr.copy(), comparing=[i, min_idx], swapping=[i, min_idx], sorted_indices=list(range(i)))
+                ops += 1 # swap
+                yield AlgorithmState(arr.copy(), comparing=[i, min_idx], swapping=[i, min_idx], sorted_indices=list(range(i)), operations=ops)
                 arr[i], arr[min_idx] = arr[min_idx], arr[i]
-                yield AlgorithmState(arr.copy(), comparing=[i, min_idx], swapping=[i, min_idx], sorted_indices=list(range(i+1)))
+                yield AlgorithmState(arr.copy(), comparing=[i, min_idx], swapping=[i, min_idx], sorted_indices=list(range(i+1)), operations=ops)
                 
-        yield AlgorithmState(arr.copy(), sorted_indices=list(range(n)))
+        yield AlgorithmState(arr.copy(), sorted_indices=list(range(n)), operations=ops)
