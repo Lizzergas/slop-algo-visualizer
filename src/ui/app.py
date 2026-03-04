@@ -130,6 +130,93 @@ class AlgoVisualizerApp(App):
     .stats-value {
         color: #f38ba8;
     }
+    
+    AnalysisScreen {
+        align: center middle;
+        background: $background 80%;
+    }
+    
+    #analysis-dialog {
+        padding: 1 2;
+        width: 60%;
+        height: auto;
+        border: thick $background 80%;
+        background: #1e1e2e;
+    }
+    
+    .analysis-grid {
+        layout: grid;
+        grid-size: 2;
+        grid-gutter: 1 2;
+        grid-columns: 1fr 1fr;
+        height: auto;
+        margin-top: 1;
+    }
+    
+    .summary-stats {
+        layout: horizontal;
+        width: 100%;
+        padding: 0 4;
+        margin-bottom: 1;
+        content-align: center middle;
+    }
+    
+    .center-text {
+        text-align: center;
+        width: 100%;
+        margin-bottom: 1;
+    }
+    
+    .button-container {
+        align-horizontal: center;
+        width: 100%;
+        margin-top: 1;
+    }
+    
+    .analysis-title {
+        text-style: bold;
+        color: #a6e3a1;
+        text-align: center;
+        margin-bottom: 2;
+        width: 100%;
+    }
+    
+    .analysis-subtitle {
+        color: #89b4fa;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    
+    .analysis-card {
+        border: solid #cba6f7;
+        background: #181825;
+        padding: 1 2;
+        margin-bottom: 2;
+        height: auto;
+    }
+    
+    .analysis-stats {
+        margin-top: 1;
+        layout: horizontal;
+        color: #f38ba8;
+        width: 100%;
+        content-align: right middle;
+    }
+    
+    #close_btn {
+        margin-top: 2;
+        align-horizontal: center;
+    }
+    
+    Sparkline {
+        height: 3;
+    }
+    Sparkline > .sparkline--max-color {
+        color: #f38ba8;
+    }
+    Sparkline > .sparkline--min-color {
+        color: #a6e3a1;
+    }
     """
     
     BINDINGS = [

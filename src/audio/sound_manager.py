@@ -52,10 +52,11 @@ class SoundManager:
             
         note = np.sin(frequency * t * 2 * np.pi) * envelope
         
-        audio = note * (2**14 - 1) # Reduced from 15 to lower default volume slightly
+        # Lower amplitude factor (13 instead of 14) to prevent speaker distortion
+        audio = note * (2**13 - 1)
         audio = audio.astype(np.int16)
         sound = pygame.sndarray.make_sound(audio)
-        sound.set_volume(0.3)
+        sound.set_volume(0.15) # Halved default volume
         return sound
 
     def _pregenerate_sounds(self):

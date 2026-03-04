@@ -12,6 +12,8 @@ from src.algorithms.factory import AlgorithmFactory
 from src.datasets.generators import DATASETS
 from src.audio.sound_manager import SoundManager
 from src.state import AlgorithmState
+from src.metrics.system_monitor import SystemMonitor
+from src.ui.analysis_screen import AnalysisScreen
 
 class StatsPanel(Static):
     """A sidebar panel that displays complexity and running metrics."""
@@ -42,8 +44,12 @@ class StatsPanel(Static):
         with Vertical(classes="stats-item"):
             yield Label("Time Elapsed:", classes="stats-label")
             yield Label("0.000s", id="time_value", classes="stats-value")
+            
+        with Vertical(classes="stats-item"):
+            yield Label("CPU / Memory:", classes="stats-label")
+            yield Label("0.0% / 0.0 MB", id="sys_value", classes="stats-value")
 
-    def update_metrics(self, state: 'AlgorithmState') -> None:
+    def update_metrics(self, state: 'AlgorithmState', cpu: float = 0.0, mem: float = 0.0) -> None:
         ops_label = self.query_one("#ops_value", Label)
         ops_label.update(f"{state.operations:,}")
         
@@ -52,7 +58,9 @@ class StatsPanel(Static):
         
         time_label = self.query_one("#time_value", Label)
         time_label.update(f"{state.time_elapsed:.3f}s")
-
+        
+        sys_label = self.query_one("#sys_value", Label)
+        sys_label.update(f"{cpu:.1f}% / {mem:.1f} MB")
 
 class AlgorithmVisualizerScreen(Screen):
     """Screen for visualizing the algorithm in real-time."""
@@ -80,6 +88,8 @@ class AlgorithmVisualizerScreen(Screen):
         self.array_size = 50 # Default width
         self.base_fps = 45 # Default frames per second base
         self.speed_multiplier = 1.0
+        
+        self.monitor: Optional[SystemMonitor] = None
         
         # Real-time tracking
         self.start_time: float = 0.0
@@ -125,9 +135,12 @@ class AlgorithmVisualizerScreen(Screen):
             
         if self.sound_enabled and len(array) > 0:
             self.sound_manager = SoundManager(min_val=min(array), max_val=max(array))
+            
+        self.monitor = SystemMonitor()
         
         initial_state = AlgorithmState(array, time_elapsed=self.elapsed_time)
-        self.stats_panel.update_metrics(initial_state)
+        cpu, mem = self.monitor.tick()
+        self.stats_panel.update_metrics(initial_state, cpu, mem)
         self._update_timer_speed()
             
     def _update_timer_speed(self) -> None:
@@ -156,19 +169,30 @@ class AlgorithmVisualizerScreen(Screen):
             
         try:
             state = next(self.sort_iterator)
+            self._last_state = state
             state.time_elapsed = self.elapsed_time
             if self.sound_manager and not self.is_paused:
                 self.sound_manager.play_for_state(state)
                 
             self.visualizer.state = state
             self.visualizer.refresh()
-            self.stats_panel.update_metrics(state)
+            
+            cpu, mem = 0.0, 0.0
+            if self.monitor:
+                cpu, mem = self.monitor.tick()
+                
+            self.stats_panel.update_metrics(state, cpu, mem)
         except StopIteration:
             if self.update_timer:
                 self.update_timer.pause()
             if self.sound_manager:
                 self.sound_manager.stop()
-            self.notify("Sorting complete!", title="Finished", timeout=2)
+            self.notify("Sorting complete! Opening analysis...", title="Finished", timeout=2)
+            
+            if self.monitor and hasattr(self, '_last_state'):
+                self.set_timer(1.0, lambda: self.app.push_screen(
+                    AnalysisScreen(self.algo_name, self.ds_name, self.monitor, self._last_state)
+                ))
 
     def action_quit_to_menu(self) -> None:
         if self.update_timer:
