@@ -5,6 +5,7 @@ from src.algorithms.selection_sort import SelectionSort
 from src.algorithms.insertion_sort import InsertionSort
 from src.algorithms.merge_sort import MergeSort
 from src.algorithms.quick_sort import QuickSort
+from src.algorithms.n_queens import NQueensAlgorithm
 
 class AlgorithmFactory:
     """Factory to retrieve and instantiate available sorting algorithms."""
@@ -14,7 +15,8 @@ class AlgorithmFactory:
         "Selection Sort": SelectionSort,
         "Insertion Sort": InsertionSort,
         "Merge Sort": MergeSort,
-        "Quick Sort": QuickSort
+        "Quick Sort": QuickSort,
+        "N-Queens": NQueensAlgorithm
     }
 
     @classmethod

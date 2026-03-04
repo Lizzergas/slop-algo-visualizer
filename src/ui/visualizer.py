@@ -7,11 +7,11 @@ from textual.containers import Horizontal, Vertical
 from textual.binding import Binding
 from textual.timer import Timer
 
-from src.ui.components import ArrayVisualizer
+from src.ui.components import ArrayVisualizer, GridVisualizer
 from src.algorithms.factory import AlgorithmFactory
 from src.datasets.generators import DATASETS
 from src.audio.sound_manager import SoundManager
-from src.state import AlgorithmState
+from src.state import BaseState, SortState, NQueensState
 from src.metrics.system_monitor import SystemMonitor
 from src.ui.analysis_screen import AnalysisScreen
 
@@ -49,12 +49,19 @@ class StatsPanel(Static):
             yield Label("CPU / Memory:", classes="stats-label")
             yield Label("0.0% / 0.0 MB", id="sys_value", classes="stats-value")
 
-    def update_metrics(self, state: 'AlgorithmState', cpu: float = 0.0, mem: float = 0.0) -> None:
+    def update_metrics(self, state: BaseState, cpu: float = 0.0, mem: float = 0.0) -> None:
         ops_label = self.query_one("#ops_value", Label)
         ops_label.update(f"{state.operations:,}")
         
         progress_label = self.query_one("#progress_value", Label)
-        progress_label.update(f"{state.current_iteration} / {len(state.array)}")
+        
+        # Determine progress calculation contextually
+        if isinstance(state, SortState):
+            progress_label.update(f"{state.current_iteration} / {len(state.array)}")
+        elif isinstance(state, NQueensState):
+            progress_label.update(f"{state.current_iteration} / {state.n}")
+        else:
+            progress_label.update(f"{state.current_iteration}")
         
         time_label = self.query_one("#time_value", Label)
         time_label.update(f"{state.time_elapsed:.3f}s")
@@ -76,10 +83,12 @@ class AlgorithmVisualizerScreen(Screen):
         Binding("-", "speed_down", "Speed Down", show=False),
     ]
 
-    def __init__(self, algo_name: str, ds_name: str, sound_enabled: bool = True, **kwargs):
+    def __init__(self, algo_name: str, ds_name: str, board_size: Optional[int] = None, sound_enabled: bool = True, **kwargs):
         super().__init__(**kwargs)
         self.algo_name = algo_name
+        self.algo = AlgorithmFactory.get_algorithm(algo_name)
         self.ds_name = ds_name
+        self.board_size = board_size
         self.sound_enabled = sound_enabled
         self.sound_manager: Optional[SoundManager] = None
         self.sort_iterator = None
@@ -108,7 +117,11 @@ class AlgorithmVisualizerScreen(Screen):
         yield Static(info_text, id="info_label", classes="info-panel")
         
         with Horizontal(classes="visualizer-container"):
-            self.visualizer = ArrayVisualizer(id="visualizer")
+            if self.algo.category == "Sorting":
+                self.visualizer = ArrayVisualizer(id="visualizer")
+            else:
+                self.visualizer = GridVisualizer(id="visualizer")
+                
             yield self.visualizer
             
             self.stats_panel = StatsPanel(algo_name=self.algo_name, classes="stats-panel")
@@ -120,25 +133,34 @@ class AlgorithmVisualizerScreen(Screen):
         self.start_algorithm()
         
     def start_algorithm(self) -> None:
-        algo = AlgorithmFactory.get_algorithm(self.algo_name)
-        dataset_gen = DATASETS[self.ds_name]
-        
-        array = dataset_gen(size=self.array_size)
-        self.sort_iterator = algo.sort(array)
         self.is_paused = False
         self.elapsed_time = 0.0
         self.last_tick_time = time.perf_counter()
         
-        # Initialize sound manager if enabled
-        if self.sound_manager:
-            self.sound_manager.stop()
+        if self.algo.category == "Sorting":
+            dataset_gen = DATASETS[self.ds_name]
+            array = dataset_gen(size=self.array_size)
+            self.sort_iterator = self.algo.sort(array)
             
-        if self.sound_enabled and len(array) > 0:
-            self.sound_manager = SoundManager(min_val=min(array), max_val=max(array))
+            # Initialize sound manager if enabled
+            if self.sound_manager:
+                self.sound_manager.stop()
+                
+            if self.sound_enabled and len(array) > 0:
+                self.sound_manager = SoundManager(min_val=min(array), max_val=max(array))
+                
+            initial_state = SortState(array, time_elapsed=self.elapsed_time)
+            
+        elif self.algo.category == "Backtracking":
+            self.sort_iterator = self.algo.solve(self.board_size)
+            if self.sound_manager:
+                self.sound_manager.stop()
+            self.sound_manager = None
+            
+            initial_state = NQueensState(n=self.board_size, time_elapsed=self.elapsed_time)
             
         self.monitor = SystemMonitor()
         
-        initial_state = AlgorithmState(array, time_elapsed=self.elapsed_time)
         cpu, mem = self.monitor.tick(initial_state.current_iteration)
         self.stats_panel.update_metrics(initial_state, cpu, mem)
         self._update_timer_speed()

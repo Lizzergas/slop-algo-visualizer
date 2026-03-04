@@ -1,5 +1,5 @@
 from typing import Iterator, List
-from src.state import AlgorithmState
+from src.state import SortState
 from src.algorithms.base import SortAlgorithm
 
 class QuickSort(SortAlgorithm):
@@ -22,20 +22,23 @@ class QuickSort(SortAlgorithm):
     def space_complexity(self) -> str:
         return "O(log n)"
 
-    def sort(self, array: List[int]) -> Iterator[AlgorithmState]:
-        self.ops = 0
+    def sort(self, array: List[int]) -> Iterator[SortState]:
+        self.operations = 0
+        self.current_iteration = 0
         arr = array.copy()
-        yield AlgorithmState(arr.copy(), operations=self.ops, current_iteration=0)
+        n = len(arr)
+        # Initial un-sorted state
+        yield SortState(arr.copy(), operations=self.operations, current_iteration=self.current_iteration)
         
-        yield from self._quick_sort(arr, 0, len(arr) - 1)
-        yield AlgorithmState(arr.copy(), sorted_indices=list(range(len(arr))), operations=self.ops, current_iteration=len(arr))
+        yield from self._quick_sort(arr, 0, n - 1)
+        yield SortState(arr.copy(), sorted_indices=list(range(n)), operations=self.operations, current_iteration=n)
 
-    def _quick_sort(self, arr: List[int], low: int, high: int) -> Iterator[AlgorithmState]:
+    def _quick_sort(self, arr: List[int], low: int, high: int) -> Iterator[SortState]:
         if low < high:
             pi_iterator = self._partition(arr, low, high)
             pi = None
             for state in pi_iterator:
-                if isinstance(state, AlgorithmState):
+                if isinstance(state, SortState):
                     yield state
                 else:
                     pi = state
@@ -44,23 +47,25 @@ class QuickSort(SortAlgorithm):
                 yield from self._quick_sort(arr, low, pi - 1)
                 yield from self._quick_sort(arr, pi + 1, high)
 
-    def _partition(self, arr: List[int], low: int, high: int) -> Iterator[AlgorithmState | int]:
+    def _partition(self, arr: List[int], low: int, high: int) -> Iterator[SortState | int]:
         pivot = arr[high]
         i = low - 1
         
         for j in range(low, high):
-            self.ops += 1 # Comparison
-            yield AlgorithmState(arr.copy(), comparing=[j, high], operations=self.ops, current_iteration=high)
+            self.operations += 1 # Comparison
+            # Compare current element with pivot BEFORE condition
+            yield SortState(arr.copy(), comparing=[j, high], operations=self.operations, current_iteration=self.current_iteration)
+            
             if arr[j] < pivot:
                 i += 1
-                self.ops += 1 # Swap
-                yield AlgorithmState(arr.copy(), comparing=[i, j], swapping=[i, j], operations=self.ops, current_iteration=high)
+                self.operations += 1 # Swap
                 arr[i], arr[j] = arr[j], arr[i]
-                yield AlgorithmState(arr.copy(), comparing=[i, j], swapping=[i, j], operations=self.ops, current_iteration=high)
+                # State AFTER a swap during partitioning
+                yield SortState(arr.copy(), comparing=[j, high], swapping=[i, j], operations=self.operations, current_iteration=self.current_iteration)
                 
-        self.ops += 1 # Swap pivot
-        yield AlgorithmState(arr.copy(), comparing=[i + 1, high], swapping=[i + 1, high], operations=self.ops, current_iteration=high)
+        # Final swap to put pivot in correct place
+        self.operations += 1
         arr[i + 1], arr[high] = arr[high], arr[i + 1]
-        yield AlgorithmState(arr.copy(), comparing=[i + 1, high], swapping=[i + 1, high], operations=self.ops, current_iteration=high)
+        yield SortState(arr.copy(), swapping=[i + 1, high], operations=self.operations, current_iteration=self.current_iteration)
         
         yield i + 1

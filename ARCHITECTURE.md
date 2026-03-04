@@ -4,105 +4,76 @@ This document describes the design, architecture, and extension guidelines for t
 
 ## 1. Architecture Overview
 
-The application is built using a unidirectional data flow and non-blocking TUI (Terminal User Interface) design via the **Textual** library. To visualize algorithms without freezing the terminal, we utilize the **Strategy/Template Pattern** combined with **Python Generators**.
+The application is built using a unidirectional data flow and non-blocking TUI (Terminal User Interface) design via the **Textual** library. It employs a **multi-category algorithm engine** to visualize diverse logic (Sorting, Backtracking, etc.).
 
-Instead of a sorting algorithm executing completely and returning a sorted list, each algorithm is implemented as a generator that `yields` an atomic `AlgorithmState` at every critical step (e.g., comparison, swap). The UI consumes this generator frame-by-frame on a timer, causing the visual bars to update in real-time.
+### 1.1 Generic State Abstraction
+Instead of hardcoding the UI to "Arrays", we use a **Protocol-based State Hierarchy**. Algorithms are generators that yield a `BaseState` object.
+- **Sorting Algorithms** yield `SortState` (containing `array`, `swapping`, `comparing`).
+- **N-Queens Algorithms** yield `NQueensState` (containing `board`, `n`, `checking`).
+
+The UI dynamically mounts the correct visualizer widget based on the algorithm's **Category**.
 
 ## 2. Directory Structure
 
 ```text
 src/
 ├── main.py                # Main entrypoint; launches the Textual App.
-├── state.py               # Contains the central Data Transfer Object (AlgorithmState).
+├── state.py               # Central State Hierarchy (BaseState, SortState, NQueensState).
 ├── algorithms/            # The Core Algorithms Domain
-│   ├── base.py            # Abstract Base class dictating the interface.
+│   ├── base.py            # Abstract Base class & category definitions.
 │   ├── factory.py         # Factory class used by the UI to fetch algorithms.
-│   └── *_sort.py          # Concrete implementations of sorting algorithms.
-├── datasets/              # Dataset Generation Domain
-│   └── generators.py      # Functions for best, worst, and average-case arrays.
+│   ├── *_sort.py          # Concrete implementations of sorting algorithms.
+│   └── n_queens.py        # Implementation of N-Queens backtracking.
+├── audio/                 # Audio synthesis domain (Sine waves mapped to frequencies).
+├── metrics/               # Resource monitoring (CPU/RAM tracking).
 └── ui/                    # Presentation Layer
-    ├── app.py             # Main Textual App, manages global styles & screens.
-    ├── components.py      # Isolated widgets (e.g., ArrayVisualizer drawing Rich bars).
-    ├── menu.py            # Main Menu screen (Dataset/Algorithm selection).
-    └── visualizer.py      # Screen that ties the generator to the widget via a Timer.
+    ├── app.py             # Main Textual App & global styles.
+    ├── components.py      # Specialized Widgets (ArrayVisualizer, GridVisualizer).
+    ├── menu.py            # Dynamic Selection screen (Category-aware).
+    ├── visualizer.py      # Core visualization lifecycle controller.
+    └── analysis_screen.py # Post-run performance graphing (Plotext).
 ```
 
 ## 3. Core Components
 
 ### `state.py`
-Defines `AlgorithmState`, a dataclass holding the current `array`, lists of indices currently being `comparing` or `swapping`, and elements that have been finalized as `sorted_indices`. It also maintains an `operations` integer for real-time tracking of array comparisons and swaps.
+Defines the `BaseState` ABC with common metrics (`operations`, `time_elapsed`, `current_iteration`).
+Subclasses provide domain-specific data:
+- `SortState`: `array`, `comparing`, `swapping`, `sorted_indices`.
+- `NQueensState`: `board` (List[int]), `n` (size), `checking` (tuple), `valid_queens`.
 
-### `algorithms/base.py - SortAlgorithm`
-The ABC defining the contract for every algorithm.
-- `name` property.
-- `description` property (used in the UI info panel).
-- `time_complexity` property (returns best/avg/worst case string).
-- `space_complexity` property (returns space complexity string).
-- `sort(self, array: List[int]) -> Iterator[AlgorithmState]` method.
+### `algorithms/base.py`
+The `Algorithm` ABC dictates the contract:
+- `category`: "Sorting", "Backtracking", etc.
+- `execute(payload: Any) -> Iterator[BaseState]`: Core generator loop.
 
 ### `ui/visualizer.py`
-Requests an algorithm iterator, sets up a Textual Timer, and pulls the `next(iterator)` at a high frame rate, passing the resulting `AlgorithmState` down to the `ArrayVisualizer` and `StatsPanel` reactive properties.
-
----
+The `AlgorithmVisualizerScreen` is category-agnostic. On construction, it checks `algo.category` to:
+1. **Mount Widgets**: Sets either `ArrayVisualizer` (bars) or `GridVisualizer` (chessboard).
+2. **Start Iterator**: Passes either a dataset array or a board size `N` to the algorithm.
 
 ## 4. How to Extend the Application
 
-### 4.1 Adding a New Sorting Algorithm
-1. Create a new file in `src/algorithms/` (e.g., `src/algorithms/heap_sort.py`).
-2. Import `SortAlgorithm` and `AlgorithmState`.
-3. Create a class extending `SortAlgorithm`.
-4. Provide standard properties (`name`, `description`, `time_complexity`, `space_complexity`).
-5. Implement the `sort` method as a generator using `yield` and tracking `operations`:
-    ```python
-    from typing import Iterator, List
-    from src.state import AlgorithmState
-    from src.algorithms.base import SortAlgorithm
+### 4.1 Adding a New Category (e.g., Graph Algorithms)
+1. Add a new `GraphState(BaseState)` in `src/state.py`.
+2. Implement a `GraphAlgorithm` base in `src/algorithms/base.py`.
+3. Create a `GraphVisualizer(Widget)` in `src/ui/components.py` to draw nodes/edges.
+4. Update `AlgorithmVisualizerScreen.compose` to handle the "Graph" category.
 
-    class HeapSort(SortAlgorithm):
-        @property
-        def name(self) -> str: return "Heap Sort"
-        
-        @property
-        def description(self) -> str: return "Description here..."
-        
-        @property
-        def time_complexity(self) -> str: return "Best/Avg/Worst: O(n log n)"
-        
-        @property
-        def space_complexity(self) -> str: return "O(1)"
+### 4.2 Adding a New Algorithm
+1. Create a implementation file in `src/algorithms/`.
+2. Inherit from `SortAlgorithm` or `BacktrackingAlgorithm`.
+3. Implement the `sort()` or `solve()` generator.
+4. Register the class in `src/algorithms/factory.py`.
 
-        def sort(self, array: List[int]) -> Iterator[AlgorithmState]:
-            arr = array.copy()
-            # Yield initial state
-            yield AlgorithmState(arr.copy())
-            
-            # ... during logic when comparing i and j:
-            yield AlgorithmState(arr.copy(), comparing=[i, j])
-            
-            # ... when swapping i and j:
-            arr[i], arr[j] = arr[j], arr[i]
-            yield AlgorithmState(arr.copy(), comparing=[i, j], swapping=[i, j])
-            
-            # Yield final sorted state
-            yield AlgorithmState(arr.copy(), sorted_indices=list(range(len(arr))))
-    ```
-5. Register your layout in `src/algorithms/factory.py` inside the `AlgorithmFactory._algorithms` dictionary. The UI will automatically pick it up and display it in the menu.
-
-### 4.2 Adding a New Dataset
+### 4.3 Adding a Dataset
 1. Open `src/datasets/generators.py`.
-2. Write a new standalone function that accepts `size` and returns `List[int]`.
-    ```python
-    def pure_random_list(size: int = 50) -> List[int]:
-        return [random.randint(1, 1000) for _ in range(size)]
-    ```
-3. Add the function to the `DATASETS` dictionary at the bottom of the file. The dictionary key is what will appear in the UI list.
+2. Add a generation function and update the `DATASETS` dictionary.
 
-    ```python
-    DATASETS = {
-        "Random": random_list,
-        "Pure Random (1-1000)": pure_random_list
-    }
-    ```
+---
 
-### 4.3 Modifying Key Bindings
-Global keys are maintained in `ui/app.py`. Screen-specific keys (like vim movements) are inside the `BINDINGS` list on the designated Screen classes (`ui/menu.py` and `ui/visualizer.py`). Textual action handlers correspond to the binding (e.g. `Binding("j", "cursor_down", ...)` triggers `action_cursor_down(self)`).
+## 5. Visual Standards
+- **Sorting**: Uses vertical bars (`█`) with green/yellow/red semantic highlighting.
+- **Grids**: Uses Unicode symbols (`♛` for queens, `♕` for checking) and high-contrast checkerboard patterns (`#3d3d3d` / `#262626`).
+- **Charts**: Performance graphs use `textual-plotext` for real-time line/scatter visualization of CPU and RAM spikes.
+

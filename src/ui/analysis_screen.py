@@ -5,7 +5,7 @@ from textual.containers import Vertical, Horizontal, Grid
 from textual_plotext import PlotextPlot
 
 from src.metrics.system_monitor import SystemMonitor
-from src.state import AlgorithmState
+from src.state import BaseState
 
 class AnalysisScreen(ModalScreen):
     """Modal Screen for displaying post-algorithm resource usage analysis."""
@@ -15,7 +15,7 @@ class AnalysisScreen(ModalScreen):
         ("escape", "dismiss_modal", "Close Analysis"),
     ]
     
-    def __init__(self, algo_name: str, ds_name: str, monitor: SystemMonitor, final_state: AlgorithmState, **kwargs):
+    def __init__(self, algo_name: str, ds_name: str, monitor: SystemMonitor, final_state: BaseState, **kwargs):
         super().__init__(**kwargs)
         self.algo_name = algo_name
         self.ds_name = ds_name
@@ -25,7 +25,15 @@ class AnalysisScreen(ModalScreen):
     def compose(self) -> ComposeResult:
         with Vertical(id="analysis-dialog"):
             yield Label(f"Performance Analysis: {self.algo_name}", classes="analysis-title")
-            yield Label(f"Dataset: [white]{self.ds_name}[/white] ({len(self.final_state.array)} elements)", classes="analysis-subtitle center-text")
+            # Determine size text based on state type
+            if hasattr(self.final_state, "array"):
+                size_text = f"{len(self.final_state.array)} elements"
+            elif hasattr(self.final_state, "n"):
+                size_text = f"{self.final_state.n}x{self.final_state.n} board"
+            else:
+                size_text = ""
+                
+            yield Label(f"Problem Size: [white]{self.ds_name}[/white] ({size_text})", classes="analysis-subtitle center-text")
             
             with Horizontal(classes="summary-stats"):
                 yield Label(f"Time Taken: [white]{self.final_state.time_elapsed:.3f}s[/white]")
@@ -94,7 +102,7 @@ class AnalysisScreen(ModalScreen):
         cpu_data = self.monitor.history_cpu or [0]
         cpu_plt = self.query_one("#cpu_plot", PlotextPlot).plt
         cpu_plt.plot(time_data, cpu_data, color="cyan")
-        cpu_plt.title("CPU Utilization During Sort")
+        cpu_plt.title("CPU Utilization During Run")
         cpu_plt.xlabel("Elapsed Time (s)")
         cpu_plt.ylabel("CPU %")
 
@@ -102,7 +110,7 @@ class AnalysisScreen(ModalScreen):
         mem_data = self.monitor.history_memory or [0]
         mem_plt = self.query_one("#mem_plot", PlotextPlot).plt
         mem_plt.plot(time_data, mem_data, color="magenta", marker="dot")
-        mem_plt.title("Memory Utilization During Sort")
+        mem_plt.title("Memory Utilization During Run")
         mem_plt.xlabel("Elapsed Time (s)")
         mem_plt.ylabel("RAM Usage (MB)")
 

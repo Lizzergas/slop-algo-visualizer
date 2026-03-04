@@ -1,5 +1,5 @@
 from typing import Iterator, List
-from src.state import AlgorithmState
+from src.state import SortState
 from src.algorithms.base import SortAlgorithm
 
 class MergeSort(SortAlgorithm):
@@ -22,15 +22,15 @@ class MergeSort(SortAlgorithm):
     def space_complexity(self) -> str:
         return "O(n)"
 
-    def sort(self, array: List[int]) -> Iterator[AlgorithmState]:
+    def sort(self, array: List[int]) -> Iterator[SortState]:
         self.ops = 0
         arr = array.copy()
-        yield AlgorithmState(arr.copy(), operations=self.ops, current_iteration=0)
+        yield SortState(arr.copy(), operations=self.ops, current_iteration=0)
         
         yield from self._merge_sort(arr, 0, len(arr) - 1)
-        yield AlgorithmState(arr.copy(), sorted_indices=list(range(len(arr))), operations=self.ops, current_iteration=len(arr))
+        yield SortState(arr.copy(), sorted_indices=list(range(len(arr))), operations=self.ops, current_iteration=len(arr))
 
-    def _merge_sort(self, arr: List[int], left: int, right: int) -> Iterator[AlgorithmState]:
+    def _merge_sort(self, arr: List[int], left: int, right: int) -> Iterator[SortState]:
         if left < right:
             mid = (left + right) // 2
             
@@ -39,7 +39,7 @@ class MergeSort(SortAlgorithm):
             
             yield from self._merge(arr, left, mid, right)
 
-    def _merge(self, arr: List[int], left: int, mid: int, right: int) -> Iterator[AlgorithmState]:
+    def _merge(self, arr: List[int], left: int, mid: int, right: int) -> Iterator[SortState]:
         L = arr[left:mid + 1]
         R = arr[mid + 1:right + 1]
         
@@ -55,19 +55,19 @@ class MergeSort(SortAlgorithm):
                 arr[k] = R[j]
                 j += 1
             self.ops += 1 # Write (act as swap for operations)
-            yield AlgorithmState(arr.copy(), comparing=[k], swapping=[k], operations=self.ops, current_iteration=right)
+            yield SortState(arr.copy(), comparing=[k], swapping=[k], operations=self.ops, current_iteration=right)
             k += 1
             
         while i < len(L):
             arr[k] = L[i]
             self.ops += 1 # Write
-            yield AlgorithmState(arr.copy(), comparing=[k], swapping=[k], operations=self.ops, current_iteration=right)
+            yield SortState(arr.copy(), comparing=[k], swapping=[k], operations=self.ops, current_iteration=right)
             i += 1
             k += 1
             
         while j < len(R):
             arr[k] = R[j]
             self.ops += 1 # Write
-            yield AlgorithmState(arr.copy(), comparing=[k], swapping=[k], operations=self.ops, current_iteration=right)
+            yield SortState(arr.copy(), comparing=[k], swapping=[k], operations=self.ops, current_iteration=right)
             j += 1
             k += 1

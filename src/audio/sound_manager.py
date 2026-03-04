@@ -2,7 +2,7 @@ import time
 import numpy as np
 import pygame
 from typing import Optional, List, Dict
-from src.state import AlgorithmState
+from src.state import SortState
 
 class SoundManager:
     """Manages playing synthesized sounds for the sorting visualization using pygame."""
@@ -67,7 +67,7 @@ class SoundManager:
                 freq = self._map_value_to_frequency(val)
                 self.sounds[val] = self._create_sine_wave(freq)
 
-    def play_for_state(self, state: 'AlgorithmState') -> None:
+    def play_for_state(self, state: 'SortState') -> None:
         """Play a sound based on the current algorithm state."""
         # Decide which elements are active in this step
         active_indices = []

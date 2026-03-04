@@ -24,7 +24,7 @@ class GridPanel(Container):
         yield Label(f"{self.ds_name} | Ops: 0 | Prog: 0/0 | Time: 0.000s", id="grid_header", classes="grid-label")
         yield self.visualizer
 
-    def update_stats(self, state: 'AlgorithmState', is_done: bool) -> None:
+    def update_stats(self, state: 'SortState', is_done: bool) -> None:
         header = self.query_one("#grid_header", Label)
         status = "[DONE]" if is_done else ""
         n = len(state.array)
@@ -97,8 +97,8 @@ class AllDatasetsVisualizerScreen(Screen):
             self.iterators_last_state[ds_name] = None
             self.finished[ds_name] = False
             
-            from src.state import AlgorithmState
-            initial_state = AlgorithmState(array, time_elapsed=0.0)
+            from src.state import SortState
+            initial_state = SortState(array, time_elapsed=0.0)
             
             # Reset UI
             panel = self.query_one(f"#panel_{ds_name.split()[0].lower()}", GridPanel)
