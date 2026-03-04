@@ -10,6 +10,8 @@ from textual.timer import Timer
 from src.ui.components import ArrayVisualizer
 from src.algorithms.factory import AlgorithmFactory
 from src.datasets.generators import DATASETS
+from src.audio.sound_manager import SoundManager
+from src.state import AlgorithmState
 
 class StatsPanel(Static):
     """A sidebar panel that displays complexity and running metrics."""
@@ -32,17 +34,24 @@ class StatsPanel(Static):
         with Vertical(classes="stats-item"):
             yield Label("Operations (Swaps/Compares):", classes="stats-label")
             yield Label("0", id="ops_value", classes="stats-value")
+            
+        with Vertical(classes="stats-item"):
+            yield Label("Progress (i/n):", classes="stats-label")
+            yield Label("0 / 0", id="progress_value", classes="stats-value")
 
         with Vertical(classes="stats-item"):
             yield Label("Time Elapsed:", classes="stats-label")
             yield Label("0.000s", id="time_value", classes="stats-value")
 
-    def update_metrics(self, ops: int, elapsed: float) -> None:
+    def update_metrics(self, state: 'AlgorithmState') -> None:
         ops_label = self.query_one("#ops_value", Label)
-        ops_label.update(f"{ops:,}")
+        ops_label.update(f"{state.operations:,}")
+        
+        progress_label = self.query_one("#progress_value", Label)
+        progress_label.update(f"{state.current_iteration} / {len(state.array)}")
         
         time_label = self.query_one("#time_value", Label)
-        time_label.update(f"{elapsed:.3f}s")
+        time_label.update(f"{state.time_elapsed:.3f}s")
 
 
 class AlgorithmVisualizerScreen(Screen):
@@ -59,10 +68,12 @@ class AlgorithmVisualizerScreen(Screen):
         Binding("-", "speed_down", "Speed Down", show=False),
     ]
 
-    def __init__(self, algo_name: str, ds_name: str, **kwargs):
+    def __init__(self, algo_name: str, ds_name: str, sound_enabled: bool = True, **kwargs):
         super().__init__(**kwargs)
         self.algo_name = algo_name
         self.ds_name = ds_name
+        self.sound_enabled = sound_enabled
+        self.sound_manager: Optional[SoundManager] = None
         self.sort_iterator = None
         self.update_timer: Optional[Timer] = None
         self.is_paused = False
@@ -108,7 +119,15 @@ class AlgorithmVisualizerScreen(Screen):
         self.elapsed_time = 0.0
         self.last_tick_time = time.perf_counter()
         
-        self.stats_panel.update_metrics(0, self.elapsed_time)
+        # Initialize sound manager if enabled
+        if self.sound_manager:
+            self.sound_manager.stop()
+            
+        if self.sound_enabled and len(array) > 0:
+            self.sound_manager = SoundManager(min_val=min(array), max_val=max(array))
+        
+        initial_state = AlgorithmState(array, time_elapsed=self.elapsed_time)
+        self.stats_panel.update_metrics(initial_state)
         self._update_timer_speed()
             
     def _update_timer_speed(self) -> None:
@@ -127,6 +146,8 @@ class AlgorithmVisualizerScreen(Screen):
     def update_visualizer(self) -> None:
         if self.is_paused:
             self.last_tick_time = time.perf_counter() # Prevent jump after resume
+            if self.sound_manager:
+                self.sound_manager.stop()
             return
             
         current_time = time.perf_counter()
@@ -135,17 +156,25 @@ class AlgorithmVisualizerScreen(Screen):
             
         try:
             state = next(self.sort_iterator)
+            state.time_elapsed = self.elapsed_time
+            if self.sound_manager and not self.is_paused:
+                self.sound_manager.play_for_state(state)
+                
             self.visualizer.state = state
             self.visualizer.refresh()
-            self.stats_panel.update_metrics(state.operations, self.elapsed_time)
+            self.stats_panel.update_metrics(state)
         except StopIteration:
             if self.update_timer:
                 self.update_timer.pause()
+            if self.sound_manager:
+                self.sound_manager.stop()
             self.notify("Sorting complete!", title="Finished", timeout=2)
 
     def action_quit_to_menu(self) -> None:
         if self.update_timer:
             self.update_timer.stop()
+        if self.sound_manager:
+            self.sound_manager.stop()
         self.app.pop_screen()
         
     def action_pause_play(self) -> None:

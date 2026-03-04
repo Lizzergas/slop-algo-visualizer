@@ -25,10 +25,10 @@ class QuickSort(SortAlgorithm):
     def sort(self, array: List[int]) -> Iterator[AlgorithmState]:
         self.ops = 0
         arr = array.copy()
-        yield AlgorithmState(arr.copy(), operations=self.ops)
+        yield AlgorithmState(arr.copy(), operations=self.ops, current_iteration=0)
         
         yield from self._quick_sort(arr, 0, len(arr) - 1)
-        yield AlgorithmState(arr.copy(), sorted_indices=list(range(len(arr))), operations=self.ops)
+        yield AlgorithmState(arr.copy(), sorted_indices=list(range(len(arr))), operations=self.ops, current_iteration=len(arr))
 
     def _quick_sort(self, arr: List[int], low: int, high: int) -> Iterator[AlgorithmState]:
         if low < high:
@@ -50,17 +50,17 @@ class QuickSort(SortAlgorithm):
         
         for j in range(low, high):
             self.ops += 1 # Comparison
-            yield AlgorithmState(arr.copy(), comparing=[j, high], operations=self.ops)
+            yield AlgorithmState(arr.copy(), comparing=[j, high], operations=self.ops, current_iteration=high)
             if arr[j] < pivot:
                 i += 1
                 self.ops += 1 # Swap
-                yield AlgorithmState(arr.copy(), comparing=[i, j], swapping=[i, j], operations=self.ops)
+                yield AlgorithmState(arr.copy(), comparing=[i, j], swapping=[i, j], operations=self.ops, current_iteration=high)
                 arr[i], arr[j] = arr[j], arr[i]
-                yield AlgorithmState(arr.copy(), comparing=[i, j], swapping=[i, j], operations=self.ops)
+                yield AlgorithmState(arr.copy(), comparing=[i, j], swapping=[i, j], operations=self.ops, current_iteration=high)
                 
         self.ops += 1 # Swap pivot
-        yield AlgorithmState(arr.copy(), comparing=[i + 1, high], swapping=[i + 1, high], operations=self.ops)
+        yield AlgorithmState(arr.copy(), comparing=[i + 1, high], swapping=[i + 1, high], operations=self.ops, current_iteration=high)
         arr[i + 1], arr[high] = arr[high], arr[i + 1]
-        yield AlgorithmState(arr.copy(), comparing=[i + 1, high], swapping=[i + 1, high], operations=self.ops)
+        yield AlgorithmState(arr.copy(), comparing=[i + 1, high], swapping=[i + 1, high], operations=self.ops, current_iteration=high)
         
         yield i + 1

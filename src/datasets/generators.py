@@ -2,7 +2,9 @@ import random
 from typing import List
 
 def random_list(size: int = 50, min_val: int = 10, max_val: int = 100) -> List[int]:
-    """Generates a random list representing the average case."""
+    """Generates a random list representing the average case. Prefers unique elements."""
+    if max_val - min_val >= size:
+        return random.sample(range(min_val, max_val + 1), size)
     return [random.randint(min_val, max_val) for _ in range(size)]
 
 def reversed_list(size: int = 50, min_val: int = 10, max_val: int = 100) -> List[int]:

@@ -21,13 +21,14 @@ class GridPanel(Container):
         
     def compose(self) -> ComposeResult:
         # We use a Label to show the dataset name and the current ops/time
-        yield Label(f"{self.ds_name} | Ops: 0 | Time: 0.000s", id="grid_header", classes="grid-label")
+        yield Label(f"{self.ds_name} | Ops: 0 | Prog: 0/0 | Time: 0.000s", id="grid_header", classes="grid-label")
         yield self.visualizer
 
-    def update_stats(self, ops: int, elapsed: float, is_done: bool) -> None:
+    def update_stats(self, state: 'AlgorithmState', is_done: bool) -> None:
         header = self.query_one("#grid_header", Label)
         status = "[DONE]" if is_done else ""
-        header.update(f"{self.ds_name} {status} | Ops: {ops:,} | Time: {elapsed:.3f}s")
+        n = len(state.array)
+        header.update(f"{self.ds_name} {status} | Ops: {state.operations:,} | Prog: {state.current_iteration}/{n} | Time: {state.time_elapsed:.3f}s")
 
 
 class AllDatasetsVisualizerScreen(Screen):
@@ -44,9 +45,10 @@ class AllDatasetsVisualizerScreen(Screen):
         Binding("-", "speed_down", "Speed Down", show=False),
     ]
 
-    def __init__(self, algo_name: str, **kwargs):
+    def __init__(self, algo_name: str, sound_enabled: bool = False, **kwargs):
         super().__init__(**kwargs)
         self.algo_name = algo_name
+        self.sound_enabled = sound_enabled
         self.array_size = 30 # Slightly smaller default width to fit grid better
         self.base_fps = 45
         self.speed_multiplier = 1.0
@@ -57,6 +59,7 @@ class AllDatasetsVisualizerScreen(Screen):
         self.iterators = {}
         self.elapsed_times = {}
         self.operations = {}
+        self.iterators_last_state = {}
         self.finished = {}
         self.last_tick_time: float = 0.0
 
@@ -91,11 +94,15 @@ class AllDatasetsVisualizerScreen(Screen):
             self.iterators[ds_name] = algo_instance.sort(array)
             self.elapsed_times[ds_name] = 0.0
             self.operations[ds_name] = 0
+            self.iterators_last_state[ds_name] = None
             self.finished[ds_name] = False
+            
+            from src.state import AlgorithmState
+            initial_state = AlgorithmState(array, time_elapsed=0.0)
             
             # Reset UI
             panel = self.query_one(f"#panel_{ds_name.split()[0].lower()}", GridPanel)
-            panel.update_stats(0, 0.0, False)
+            panel.update_stats(initial_state, False)
             
         self.last_tick_time = time.perf_counter()
         self._update_timer_speed()
@@ -132,17 +139,22 @@ class AllDatasetsVisualizerScreen(Screen):
             
             try:
                 state = next(iterator)
+                state.time_elapsed = self.elapsed_times[ds_name]
                 self.operations[ds_name] = state.operations
+                self.iterators_last_state[ds_name] = state
                 
                 panel = self.query_one(f"#panel_{ds_name.split()[0].lower()}", GridPanel)
                 panel.visualizer.state = state
                 panel.visualizer.refresh()
-                panel.update_stats(state.operations, self.elapsed_times[ds_name], False)
+                panel.update_stats(state, False)
                 
             except StopIteration:
                 self.finished[ds_name] = True
                 panel = self.query_one(f"#panel_{ds_name.split()[0].lower()}", GridPanel)
-                panel.update_stats(self.operations[ds_name], self.elapsed_times[ds_name], True)
+                if ds_name in self.iterators_last_state:
+                    state = self.iterators_last_state[ds_name]
+                    state.time_elapsed = self.elapsed_times[ds_name]
+                    panel.update_stats(state, True)
 
         if all_finished:
             if self.update_timer:
