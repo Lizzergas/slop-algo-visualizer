@@ -139,7 +139,7 @@ class AlgorithmVisualizerScreen(Screen):
         self.monitor = SystemMonitor()
         
         initial_state = AlgorithmState(array, time_elapsed=self.elapsed_time)
-        cpu, mem = self.monitor.tick()
+        cpu, mem = self.monitor.tick(initial_state.current_iteration)
         self.stats_panel.update_metrics(initial_state, cpu, mem)
         self._update_timer_speed()
             
@@ -179,7 +179,7 @@ class AlgorithmVisualizerScreen(Screen):
             
             cpu, mem = 0.0, 0.0
             if self.monitor:
-                cpu, mem = self.monitor.tick()
+                cpu, mem = self.monitor.tick(state.current_iteration)
                 
             self.stats_panel.update_metrics(state, cpu, mem)
         except StopIteration:

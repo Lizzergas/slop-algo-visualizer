@@ -12,6 +12,7 @@ dependencies = [
     "rich>=14.3.3",
     "simpleaudio>=1.0.4",
     "textual>=8.0.1",
+    "textual-plotext>=1.0.1",
 ]
 
 [dependency-groups]

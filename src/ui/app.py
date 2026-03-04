@@ -138,7 +138,7 @@ class AlgoVisualizerApp(App):
     
     #analysis-dialog {
         padding: 1 2;
-        width: 60%;
+        width: 90%;
         height: auto;
         border: thick $background 80%;
         background: #1e1e2e;
@@ -146,9 +146,9 @@ class AlgoVisualizerApp(App):
     
     .analysis-grid {
         layout: grid;
-        grid-size: 2;
+        grid-size: 3;
         grid-gutter: 1 2;
-        grid-columns: 1fr 1fr;
+        grid-columns: 1fr 1fr 1fr;
         height: auto;
         margin-top: 1;
     }
@@ -208,14 +208,10 @@ class AlgoVisualizerApp(App):
         align-horizontal: center;
     }
     
-    Sparkline {
-        height: 3;
-    }
-    Sparkline > .sparkline--max-color {
-        color: #f38ba8;
-    }
-    Sparkline > .sparkline--min-color {
-        color: #a6e3a1;
+    .plot-widget {
+        height: 20;
+        margin-top: 1;
+        margin-bottom: 1;
     }
     """
     

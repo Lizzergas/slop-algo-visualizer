@@ -13,10 +13,11 @@ class SystemMonitor:
         self.history_time: List[float] = []
         self.history_cpu: List[float] = []
         self.history_memory: List[float] = [] # Memory in MB
+        self.history_iterations: List[int] = []
         
         self.start_time = time.perf_counter()
 
-    def tick(self) -> Tuple[float, float]:
+    def tick(self, current_iteration: int = 0) -> Tuple[float, float]:
         """
         Records the current CPU and memory usage and returns them.
         Returns: (cpu_percent, memory_mb)
@@ -30,5 +31,6 @@ class SystemMonitor:
         self.history_time.append(current_time)
         self.history_cpu.append(cpu_percent)
         self.history_memory.append(memory_mb)
+        self.history_iterations.append(current_iteration)
         
         return cpu_percent, memory_mb
